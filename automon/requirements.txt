@@ -1,0 +1,2 @@
+pyudev>=0.24
+pyyaml>=6.0
