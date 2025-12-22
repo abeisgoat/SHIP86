@@ -1,7 +1,10 @@
 # SHIPx86
 ![Case Render](case_render.png)
 
-Files for the SHIPx86 console and cartridges.
+This repo contains files for the SHIPx86 console and cartridges. Please see this Youtube video if you'd like additional context and to see the whole project.
+
+[![Youtube video](https://img.youtube.com/vi/iJbJDowBfi4/0.jpg)](https://www.youtube.com/watch?v=iJbJDowBfi4)
+
 
 ## About
 
