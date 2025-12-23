@@ -6,15 +6,24 @@ SERVICE_NAME="automon"
 
 # Check for root
 if [ "$EUID" -ne 0 ]; then
-    echo "Please run as root (sudo ./install.sh)"
+    echo "Please run as root (sudo $0)"
     exit 1
 fi
 
 # Get the user who ran sudo
 RUN_USER="${SUDO_USER:-$USER}"
 if [ "$RUN_USER" = "root" ]; then
-    echo "Error: Please run with sudo from a non-root user"
-    exit 1
+    while (true); do
+        read -rp "What user should automon be installed for? (do not enter 'root') " user
+        if [ "$user" = "root" ]; then
+            echo "Installing as root could be catastrophic; choose a non-root user (a user besides 'root')."
+            continue
+        fi
+        if [[ -n "$user" ]]; then
+            exec su "$user" -c "exec su root -c \"'$0' $@\"" # Might want to change
+            exit
+        fi
+    done
 fi
 
 echo "Installing automon SD card monitor..."
