@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""SD Card Monitor - Detects insertion and removal of SD cards."""
+"""
+SD Card Monitor - Detects insertion and removal of SD cards.
+Executes signed cart.yaml only if signature is valid.
+"""
 
 import argparse
 import os
@@ -10,6 +13,9 @@ import subprocess
 import pyudev
 import yaml
 import sys
+
+TRUSTED_PUBKEY = "/etc/cart_trust/allowed_signers"
+SIGNATURE_NAMESPACE = "cart"
 
 
 def is_sd_card(device):
@@ -89,6 +95,34 @@ def get_mount_point(device_node, timeout=5):
 
     return None
 
+def verify_cart_signature(cart_path):
+    sig_path = cart_path + ".sig"
+
+    if not os.path.exists(sig_path):
+        print("ERROR: cart.yaml.sig missing")
+        return False
+
+    if not os.path.exists(TRUSTED_PUBKEY):
+        print("ERROR: Trusted public key missing")
+        return False
+
+    try:
+        with open(cart_path, "rb") as f:
+            subprocess.check_call([
+                "ssh-keygen", "-Y", "verify",
+                "-f", TRUSTED_PUBKEY,
+                "-I", SIGNATURE_NAMESPACE,
+                "-n", SIGNATURE_NAMESPACE,
+                "-s", sig_path,
+                "-"
+            ], stdin=f)
+
+        print("Signature verification OK")
+        return True
+
+    except subprocess.CalledProcessError:
+        print("ERROR: Signature verification FAILED")
+        return False
 
 def get_user_display_env(uid):
     """Get display-related environment variables from user's session."""
@@ -136,6 +170,11 @@ def start_cart_process(mount_point, run_as_user=None):
         return None
 
     print(f"Found cart.yaml at {cart_path}")
+
+    if not verify_cart_signature(cart_path):
+        print("Execution blocked (untrusted cart)")
+        return None
+                
     with open(cart_path) as f:
         config = yaml.safe_load(f)
 
